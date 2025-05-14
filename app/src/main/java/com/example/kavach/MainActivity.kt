@@ -31,14 +31,23 @@ import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
 import androidx.navigation.compose.rememberNavController
 import com.google.android.gms.location.*
+import com.google.firebase.FirebaseApp
+import com.google.firebase.auth.FirebaseAuth
 
 class MainActivity : ComponentActivity() {
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private var currentLocation: Location? = null
+    private lateinit var auth: FirebaseAuth
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
+
         super.onCreate(savedInstanceState)
+        FirebaseApp.initializeApp(this)
+
+        FirebaseAuth.getInstance().signOut()
+//        auth = FirebaseAuth.getInstance()
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
         requestPermissions()
@@ -46,13 +55,15 @@ class MainActivity : ComponentActivity() {
 //        enableEdgeToEdge()
         setContent {
             val navController = rememberNavController()
+            val auth = FirebaseAuth.getInstance()
 
             KavachTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     AppNavigation(
                         navController = navController,
                         getLocation = { getLastLocation() },
-                        sendSOS = { location -> sendEmergencySMS(location)}
+                        sendSOS = { location -> sendEmergencySMS(location)},
+                        auth = auth
                     )
                 }
             }

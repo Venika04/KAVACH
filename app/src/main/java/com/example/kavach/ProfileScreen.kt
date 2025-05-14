@@ -1,5 +1,6 @@
 package com.example.kavach
 
+import android.content.Context
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -17,16 +18,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+import com.google.firebase.auth.FirebaseAuth
 
 @Composable
 fun ProfileScreen(navController: NavHostController) {
     val topBarColor = Color(0xFF6200EE)
     val backgroundColor = Color(0xFFF3E5F5)
+    val user = FirebaseAuth.getInstance().currentUser
+    val email = user?.email ?: "No Email Found"
+    val context = LocalContext.current
+    val sharedPrefs = context.getSharedPreferences("KavachPrefs", Context.MODE_PRIVATE)
+    val username = sharedPrefs.getString("username", "Unknown User")
+
 
     Scaffold(
         topBar = {
@@ -72,9 +81,26 @@ fun ProfileScreen(navController: NavHostController) {
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Username: John Doe", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                        Text("Phone: +91 9876543210", fontSize = 16.sp)
-                    }
+                        Text("Username: $username", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        Text("Email: $email", fontSize = 18.sp, fontWeight = FontWeight.Bold)                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // 🚨 Log Out Button
+                Button(
+                    onClick = {
+                        FirebaseAuth.getInstance().signOut()
+                        navController.navigate("auth") {
+                            popUpTo("main") { inclusive = true }
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    colors = ButtonDefaults.buttonColors(backgroundColor = Color.Red)
+                ) {
+                    Text("Log Out", color = Color.White, fontWeight = FontWeight.Bold)
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -102,6 +128,9 @@ fun ProfileScreen(navController: NavHostController) {
                         }
                     }
                 }
+
+
+
             }
         }
     )

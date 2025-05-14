@@ -117,7 +117,7 @@ fun LocationBox() {
 //        }
 //    }
 
-    LocationMapScreen()
+    LocationScreen()
 }
 
 

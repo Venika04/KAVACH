@@ -1,5 +1,6 @@
 package com.example.kavach
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -28,6 +29,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 
 
 @Composable
@@ -58,7 +60,7 @@ fun AuthScreen(
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
-            label = { Text("Email or Phone") },
+            label = { Text("Email") },
             singleLine = true,
             modifier = Modifier.fillMaxWidth()
         )
@@ -76,8 +78,18 @@ fun AuthScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        val context = LocalContext.current
+
         Button (
-            onClick = { onAuthSubmit(email, password) },
+            onClick = {
+                if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                    Toast.makeText(context, "Please enter a valid email address", Toast.LENGTH_SHORT).show()
+                } else if (password.length < 6) {
+                    Toast.makeText(context, "Password must be at least 6 characters", Toast.LENGTH_SHORT).show()
+                } else {
+                    onAuthSubmit(email, password)
+                }
+            },
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(text = if (isSignUp) "Register" else "Login")
