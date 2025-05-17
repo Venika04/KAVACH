@@ -44,6 +44,12 @@ fun AddContactScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
+    val isLoading = contactViewModel.isLoading
+
+    LaunchedEffect(Unit) {
+        contactViewModel.fetchContacts()
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -111,7 +117,11 @@ fun AddContactScreen(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    if (contactList.isEmpty()) {
+                    if (isLoading) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
+                        }
+                    } else if (contactList.isEmpty()) {
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             Text("No contacts added yet.")
                         }

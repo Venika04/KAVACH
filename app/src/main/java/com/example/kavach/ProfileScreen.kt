@@ -14,6 +14,10 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -25,6 +29,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import androidx.compose.runtime.*
 
 @Composable
 fun ProfileScreen(navController: NavHostController) {
@@ -33,8 +39,31 @@ fun ProfileScreen(navController: NavHostController) {
     val user = FirebaseAuth.getInstance().currentUser
     val email = user?.email ?: "No Email Found"
     val context = LocalContext.current
-    val sharedPrefs = context.getSharedPreferences("KavachPrefs", Context.MODE_PRIVATE)
-    val username = sharedPrefs.getString("username", "Unknown User")
+//    val sharedPrefs = context.getSharedPreferences("KavachPrefs", Context.MODE_PRIVATE)
+//    val username = sharedPrefs.getString("username", "Unknown User")
+    val auth = FirebaseAuth.getInstance()
+    val userId = auth.currentUser?.uid
+    var userName by remember { mutableStateOf("Loading...") }
+
+    LaunchedEffect(userId) {
+        userId?.let { uid ->
+            FirebaseFirestore.getInstance()
+                .collection("users")
+                .document(uid)
+                .get()
+                .addOnSuccessListener { document ->
+                    if(document.exists()) {
+                        val nameFromDb = document.getString("name")
+                        userName = nameFromDb ?: "No Name Found"
+                    } else {
+                        userName = "No User Document"
+                    }
+                }
+                .addOnFailureListener {
+                    userName = "Failed to load name"
+                }
+        }
+    }
 
 
     Scaffold(
@@ -81,7 +110,7 @@ fun ProfileScreen(navController: NavHostController) {
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Username: $username", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        Text("Username: $userName", fontSize = 18.sp, fontWeight = FontWeight.Bold)
                         Text("Email: $email", fontSize = 18.sp, fontWeight = FontWeight.Bold)                    }
                 }
 

@@ -15,6 +15,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 @Composable
 fun AppNavigation(
@@ -67,7 +68,7 @@ fun AppNavigation(
                         auth.createUserWithEmailAndPassword(email, password)
                             .addOnCompleteListener { task ->
                                 if (task.isSuccessful) {
-                                    navController.navigate("main") {
+                                    navController.navigate("user_info") {
                                         popUpTo("auth") { inclusive = true }
                                     }
                                 } else {
@@ -79,18 +80,33 @@ fun AppNavigation(
                         auth.signInWithEmailAndPassword(email, password)
                             .addOnCompleteListener { task ->
                                 if (task.isSuccessful) {
-                                    val sharedPrefs = context.getSharedPreferences("KavachPrefs", Context.MODE_PRIVATE)
-                                    val username = sharedPrefs.getString("username", null)
-                                    if (username == null) {
-                                        navController.navigate("userinfo") {
-                                            popUpTo("auth") { inclusive = true }
-                                        }
-                                    } else {
-                                        navController.navigate("main") {
-                                            popUpTo("auth") { inclusive = true }
-                                        }
+                                    val userId = auth.currentUser?.uid
+                                    val db = FirebaseFirestore.getInstance()
+
+//                                    val user = hashMapOf(
+//                                        "name" to ""
+//                                    )
+
+                                    if (userId != null) {
+                                        db.collection("users").document(userId)
+                                            .get()
+                                            .addOnSuccessListener { document ->
+                                                val userName = document.getString("name")
+                                                if(userName.isNullOrBlank()) {
+                                                    navController.navigate("userinfo") {
+                                                        popUpTo("auth") { inclusive = true}
+                                                    }
+                                                } else {
+                                                    navController.navigate("main") {
+                                                        popUpTo("auth") { inclusive = true }
+                                                    }
+                                                }
+                                            }
+                                            .addOnFailureListener {
+                                                Toast.makeText(context, "Failed to save user info", Toast.LENGTH_SHORT).show()
+                                            }
                                     }
-                                } else {
+                                }else {
                                     // Login failed – maybe account doesn't exist
                                     val errorMessage = task.exception?.message ?: "Login failed"
                                     println("Login failed: $errorMessage")
@@ -133,8 +149,11 @@ fun AppNavigation(
             AddContactScreen(navController)
         }
 
-        composable("userinfo") {
-            UserInfoScreen(navController)
+        composable("user_info") {
+            val userId = FirebaseAuth.getInstance().currentUser?.uid
+            if (userId != null) {
+                UserInfoScreen(navController, userId)
+            }
         }
     }
 }
