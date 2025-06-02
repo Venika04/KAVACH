@@ -1,4 +1,4 @@
-package com.example.kavach
+package com.example.kavach.main
 
 import android.Manifest
 import android.content.pm.PackageManager

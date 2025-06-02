@@ -38,7 +38,6 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private var currentLocation: Location? = null
-    private lateinit var auth: FirebaseAuth
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -46,16 +45,14 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         FirebaseApp.initializeApp(this)
 
-        FirebaseAuth.getInstance().signOut()
-//        auth = FirebaseAuth.getInstance()
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
         requestPermissions()
 
-//        enableEdgeToEdge()
         setContent {
             val navController = rememberNavController()
             val auth = FirebaseAuth.getInstance()
+            val currentUser = auth.currentUser
 
             KavachTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
@@ -63,15 +60,11 @@ class MainActivity : ComponentActivity() {
                         navController = navController,
                         getLocation = { getLastLocation() },
                         sendSOS = { location -> sendEmergencySMS(location)},
-                        auth = auth
+                        auth = auth,
+                        isLoggedIn = currentUser != null
                     )
                 }
             }
-
-//            MainScreen(
-//                getLocation = { getLastLocation() },
-//                sendSOS = { location -> sendEmergencySMS(location) }
-//            )
         }
     }
 

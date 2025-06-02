@@ -1,6 +1,5 @@
-package com.example.kavach
+package com.example.kavach.profile
 
-import android.content.Context
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -31,6 +30,7 @@ import androidx.navigation.NavHostController
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import androidx.compose.runtime.*
+import com.example.kavach.R
 
 @Composable
 fun ProfileScreen(navController: NavHostController) {

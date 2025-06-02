@@ -1,4 +1,4 @@
-package com.example.kavach
+package com.example.kavach.contact
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf

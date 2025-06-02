@@ -1,4 +1,4 @@
-package com.example.kavach
+package com.example.kavach.main
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -19,10 +19,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.window.Dialog
 import androidx.compose.material3.MaterialTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import com.example.kavach.R
+import com.example.kavach.contact.ContactViewModel
 
 
 @OptIn(ExperimentalPermissionsApi::class)
