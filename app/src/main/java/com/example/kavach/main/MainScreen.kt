@@ -75,11 +75,44 @@ fun MainScreen(
                         navController.navigate("add_contact")
                     },
                     label = { Text("Contact") },
-                    icon = { },
+                    icon = {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_contact),
+                            contentDescription = "Contact icon"
+                        )
+                    },
                     alwaysShowLabel = true
                 )
-                BottomNavigationItem(selected = false, onClick = { }, label = { Text("Rating") }, icon = { }, alwaysShowLabel = true)
-                BottomNavigationItem(selected = false, onClick = { }, label = { Text("Help") }, icon = { }, alwaysShowLabel = true)
+                BottomNavigationItem(selected = false,
+                    onClick = {
+                        navController.navigate("rate_location")
+                    },
+                    label = { Text("Rating") },
+                    icon = {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_location_rating),
+                            contentDescription = "location rating"
+                        )
+                    },
+                    alwaysShowLabel = true
+                )
+                BottomNavigationItem(selected = false,
+                    onClick = {
+                        navController.navigate("help") {
+                            popUpTo(navController.graph.startDestinationId) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                    label = { Text("Help") },
+                    icon = {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_info),
+                            contentDescription = "Help"
+                        )
+                    },
+                    alwaysShowLabel = true
+                )
             }
         }
     ) {
@@ -105,19 +138,6 @@ fun MainScreen(
 
 @Composable
 fun LocationBox() {
-//    Surface(
-//        modifier = Modifier
-//            .padding(16.dp)
-//            .fillMaxWidth(0.9f)
-//            .height(100.dp),
-//        color = Color.White,
-//        elevation = 4.dp
-//    ) {
-//        Box(contentAlignment = Alignment.Center) {
-//            Text("Current Location", fontSize = 18.sp, color = Color.Black)
-//        }
-//    }
-
     LocationScreen()
 }
 

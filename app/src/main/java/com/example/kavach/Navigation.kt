@@ -26,6 +26,8 @@ import java.util.concurrent.TimeUnit
 import android.app.Activity
 import androidx.compose.ui.platform.LocalContext
 import com.example.kavach.auth.OTPVerificationScreen
+import com.example.kavach.help.HelpScreen
+import com.example.kavach.rating.RateLocationScreen
 
 
 @Composable
@@ -40,28 +42,6 @@ fun AppNavigation(
 
     // Decide the start destination based on auth status
     val startDestination = if (isLoggedIn) "main" else "auth"
-//    var authSuccess by remember { mutableStateOf(false) }
-//
-//    val auth = FirebaseAuth.getInstance()
-
-    // Automatically navigate to MainScreen if already logged in
-//    val currentUser = auth.currentUser
-//    LaunchedEffect(currentUser) {
-//        if (currentUser != null) {
-//            navController.navigate("main") {
-//                popUpTo("auth") { inclusive = true }
-//            }
-//        }
-//    }
-
-    // Navigate after login/signup success
-//    LaunchedEffect(authSuccess) {
-//        if (authSuccess) {
-//            navController.navigate("main") {
-//                popUpTo("auth") { inclusive = true }
-//            }
-//        }
-//    }
 
     NavHost(
         navController = navController,
@@ -240,6 +220,14 @@ fun AppNavigation(
                     navController.popBackStack()
                 }
             )
+        }
+
+        composable("rate_location") {
+            RateLocationScreen(navController)
+        }
+
+        composable("help") {
+            HelpScreen(navController = navController)
         }
     }
 }
