@@ -1,14 +1,17 @@
 package com.example.kavach.profile
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -25,6 +28,7 @@ import androidx.navigation.NavHostController
 import com.example.kavach.R
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.delay
 
 @Composable
 fun ProfileScreen(navController: NavHostController) {
@@ -35,16 +39,14 @@ fun ProfileScreen(navController: NavHostController) {
     val auth = FirebaseAuth.getInstance()
     val userId = auth.currentUser?.uid
 
-    // State variables for user info
     var userName by remember { mutableStateOf("Loading...") }
     var editedName by remember { mutableStateOf("") }
     var phoneNumber by remember { mutableStateOf(user?.phoneNumber ?: "") }
 
-    // Dialog state
     var showDialog by remember { mutableStateOf(false) }
     var dialogMessage by remember { mutableStateOf("") }
 
-    // Load user name from Firestore on screen start or userId change
+    // Fetch user name from Firestore
     LaunchedEffect(userId) {
         userId?.let { uid ->
             FirebaseFirestore.getInstance()
@@ -97,7 +99,6 @@ fun ProfileScreen(navController: NavHostController) {
             )
         },
         content = { paddingValues ->
-            // Use LazyColumn for full screen scrolling and avoid nested scroll conflicts
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
@@ -105,139 +106,154 @@ fun ProfileScreen(navController: NavHostController) {
                     .padding(paddingValues)
                     .padding(16.dp)
             ) {
-                // Header content: profile image, name, phone, email, save button
                 item {
-                    Spacer(modifier = Modifier.height(16.dp))
+                    val visibilities = remember { List(5) { mutableStateOf(false) } }
 
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 8.dp),
-                        contentAlignment = Alignment.Center
+                    LaunchedEffect(Unit) {
+                        visibilities.forEachIndexed { index, state ->
+                            delay(150)
+                            state.value = true
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    AnimatedVisibility(
+                        visible = visibilities[0].value,
+                        enter = slideInVertically(initialOffsetY = { it }) + fadeIn()
                     ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_person),
-                            contentDescription = "Profile Image",
-                            modifier = Modifier
-                                .size(120.dp)
-                                .clip(CircleShape)
-                                .border(2.dp, Color.Gray, CircleShape)
+                        InfoCard(
+                            label = "Username",
+                            value = editedName,
+                            onValueChange = { editedName = it },
+                            readOnly = false
                         )
                     }
+
+                    AnimatedVisibility(
+                        visible = visibilities[1].value,
+                        enter = slideInVertically(initialOffsetY = { it }) + fadeIn()
+                    ) {
+                        InfoCard(
+                            label = "Phone Number",
+                            value = phoneNumber,
+                            onValueChange = {},
+                            readOnly = true
+                        )
+                    }
+
+                    AnimatedVisibility(
+                        visible = visibilities[2].value,
+                        enter = slideInVertically(initialOffsetY = { it }) + fadeIn()
+                    ) {
+                        InfoCard(
+                            label = "Email ID",
+                            value = email,
+                            onValueChange = {},
+                            readOnly = true
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    AnimatedVisibility(
+                        visible = visibilities[3].value,
+                        enter = slideInVertically(initialOffsetY = { it }) + fadeIn()
+                    ) {
+                        Button(
+                            onClick = {
+                                userId?.let { uid ->
+                                    val updates = hashMapOf("name" to editedName)
+                                    FirebaseFirestore.getInstance()
+                                        .collection("users")
+                                        .document(uid)
+                                        .update(updates as Map<String, Any>)
+                                        .addOnSuccessListener {
+                                            dialogMessage = "Changes saved successfully!"
+                                            showDialog = true
+                                        }
+                                        .addOnFailureListener {
+                                            dialogMessage = "Failed to save changes"
+                                            showDialog = true
+                                        }
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 12.dp),
+                            colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF388E3C))
+                        ) {
+                            Text("Save Changes", color = Color.White, fontWeight = FontWeight.Bold)
+                        }
+                    }
+
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    InfoCard(
-                        label = "Username",
-                        value = editedName,
-                        onValueChange = { editedName = it },
-                        readOnly = false
-                    )
-
-                    InfoCard(
-                        label = "Phone number",
-                        value = phoneNumber,
-                        onValueChange = {},
-                        readOnly = true
-                    )
-
-                    InfoCard(
-                        label = "Email Id.",
-                        value = email,
-                        onValueChange = {},
-                        readOnly = true
-                    )
-
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    Button(
-                        onClick = {
-                            userId?.let { uid ->
-                                val updates = hashMapOf(
-                                    "name" to editedName
-//                                    "phoneNumber" to phoneNumber
-                                )
-                                FirebaseFirestore.getInstance()
-                                    .collection("users")
-                                    .document(uid)
-                                    .update(updates as Map<String, Any>)
-                                    .addOnSuccessListener {
-                                        dialogMessage = "Changes saved successfully!"
-                                        showDialog = true
-                                    }
-                                    .addOnFailureListener {
-                                        dialogMessage = "Failed to save changes"
-                                        showDialog = true
-                                    }
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 12.dp),
-                        colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF388E3C))
+                    AnimatedVisibility(
+                        visible = visibilities[4].value,
+                        enter = slideInVertically(initialOffsetY = { it }) + fadeIn()
                     ) {
-                        Text("Save Changes", color = Color.White, fontWeight = FontWeight.Bold)
+                        Button(
+                            onClick = {
+                                FirebaseAuth.getInstance().signOut()
+                                navController.navigate("auth") {
+                                    popUpTo("main") { inclusive = true }
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp),
+                            colors = ButtonDefaults.buttonColors(backgroundColor = Color.Red)
+                        ) {
+                            Text("Log Out", color = Color.White, fontWeight = FontWeight.Bold)
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(24.dp))
                 }
 
 
-
-                // Grid-like section with 2 columns created manually in LazyColumn rows
                 val items = listOf("My Contacts", "Location History", "Safety Tips", "About App")
                 val chunkedItems = items.chunked(2)
+
                 chunkedItems.forEach { rowItems ->
                     item {
-                        Row(modifier = Modifier.fillMaxWidth()) {
-                            rowItems.forEach { label ->
-                                Box(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .padding(8.dp)
-                                        .border(1.dp, Color.Gray, RoundedCornerShape(8.dp))
-                                        .aspectRatio(1f)
-                                        .clickable {
-                                            // TODO: Handle click event
-                                        },
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(label, fontWeight = FontWeight.SemiBold)
+                        AnimatedVisibility(
+                            visible = true,
+                            enter = slideInVertically(initialOffsetY = { it / 2 }) + fadeIn()
+                        ) {
+                            Row(modifier = Modifier.fillMaxWidth()) {
+                                rowItems.forEach { label ->
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .padding(8.dp)
+                                            .border(1.dp, Color.Gray, RoundedCornerShape(8.dp))
+                                            .aspectRatio(1f)
+                                            .clickable {
+                                                // TODO: Handle click
+                                            },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(label, fontWeight = FontWeight.SemiBold)
+                                    }
                                 }
-                            }
-                            if (rowItems.size == 1) {
-                                Spacer(modifier = Modifier.weight(1f)) // Fill space if odd number of items
+                                if (rowItems.size == 1) {
+                                    Spacer(modifier = Modifier.weight(1f))
+                                }
                             }
                         }
                     }
                 }
 
-                // Logout button at bottom
                 item {
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Button(
-                        onClick = {
-                            FirebaseAuth.getInstance().signOut()
-                            navController.navigate("auth") {
-                                popUpTo("main") { inclusive = true }
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp),
-                        colors = ButtonDefaults.buttonColors(backgroundColor = Color.Red)
-                    ) {
-                        Text("Log Out", color = Color.White, fontWeight = FontWeight.Bold)
-                    }
-
                     Spacer(modifier = Modifier.height(24.dp))
                 }
             }
 
             if (showDialog) {
                 AlertDialog(
-                    onDismissRequest = {showDialog = false},
+                    onDismissRequest = { showDialog = false },
                     title = { Text("Update Status") },
                     text = { Text(dialogMessage) },
                     confirmButton = {
@@ -246,19 +262,16 @@ fun ProfileScreen(navController: NavHostController) {
                         }
                     },
                     dismissButton = {
-                        TextButton(onClick = {showDialog = false}) {
+                        TextButton(onClick = { showDialog = false }) {
                             Text("Cancel")
                         }
                     }
                 )
-
             }
         }
     )
 }
 
-
-// Helper function to show a card with a single OutlinedTextField
 @Composable
 fun InfoCard(
     label: String,
@@ -270,11 +283,12 @@ fun InfoCard(
         shape = RoundedCornerShape(12.dp),
         elevation = 6.dp,
         border = BorderStroke(1.dp, Color(0xFF6200EE)),
+        backgroundColor = Color.White,
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
     ) {
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
             Text(
                 text = label,
                 color = Color(0xFF6200EE),
