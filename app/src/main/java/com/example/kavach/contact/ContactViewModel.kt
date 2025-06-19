@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
+// Contact data class
 data class Contact(val name: String, val phone: String, val relationship: String)
 
 class ContactViewModel : ViewModel() {
@@ -19,11 +20,10 @@ class ContactViewModel : ViewModel() {
     private val db = FirebaseFirestore.getInstance()
 
     fun fetchContacts() {
-        val user = FirebaseAuth.getInstance().currentUser ?: return
+        val userId = auth.currentUser?.uid ?: return
         isLoading = true
-        FirebaseFirestore.getInstance()
-            .collection("users")
-            .document(user.uid)
+        db.collection("users")
+            .document(userId)
             .collection("contacts")
             .get()
             .addOnSuccessListener { documents ->
@@ -55,9 +55,8 @@ class ContactViewModel : ViewModel() {
             val oldContact = contactList[index]
             contactList[index] = contact
 
-            // Find and update the matching Firestore document
             db.collection("users").document(userId).collection("contacts")
-                .whereEqualTo("phone", oldContact.phone) // assuming phone is unique
+                .whereEqualTo("phone", oldContact.phone) // Assuming phone is unique
                 .get()
                 .addOnSuccessListener { docs ->
                     for (doc in docs) {
@@ -86,5 +85,10 @@ class ContactViewModel : ViewModel() {
                     }
                 }
         }
+    }
+
+    // Helper method to get just phone numbers (used for SOS SMS)
+    fun getEmergencyContactNumbers(): List<String> {
+        return contactList.map { it.phone }
     }
 }
