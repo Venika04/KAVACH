@@ -4,6 +4,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
+import android.hardware.Sensor
 import android.location.Location
 import android.media.MediaPlayer
 import android.telephony.SmsManager
@@ -11,10 +12,8 @@ import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
@@ -32,11 +31,15 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.kavach.R
 import com.example.kavach.contact.ContactViewModel
+import com.example.kavach.main.util.ShakeDetector
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.android.gms.location.LocationServices
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import android.hardware.SensorManager
 
+
+@SuppressLint("ServiceCast")
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun MainScreen(
@@ -47,6 +50,16 @@ fun MainScreen(
     val backgroundColor = Color(0xFFF3E5F5)
     val bottomBarColor = topBarColor
     val context = LocalContext.current
+    val contactViewModel: ContactViewModel = viewModel()
+
+    LaunchedEffect(Unit) {
+        val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        val shakeDetector = ShakeDetector {
+            triggerSOS(context, contactViewModel)
+        }
+        val accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+        sensorManager.registerListener(shakeDetector, accelerometer, SensorManager.SENSOR_DELAY_UI)
+    }
 
     Scaffold(
         topBar = {
