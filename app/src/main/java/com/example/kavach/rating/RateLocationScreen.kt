@@ -49,7 +49,7 @@ import com.google.accompanist.flowlayout.FlowRow
 
 @Composable
 fun RateLocationScreen(navController: NavController) {
-    val topBarColor = Color(0xFF6200EE)
+    val topBarColor = Color(0xFF4B0082)
     val backgroundColor = Color(0xFFF3E5F5)
 
     var rating by remember { mutableStateOf(3f) }
@@ -79,7 +79,7 @@ fun RateLocationScreen(navController: NavController) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
                     }
                 },
-                backgroundColor = Color(0xFF8000FF),
+                backgroundColor = Color(0xFF4B0082),
                 contentColor = Color.White,
             )
         },
@@ -175,7 +175,7 @@ fun RateLocationScreen(navController: NavController) {
 
 @Composable
 fun CustomChip(label: String, selected: Boolean, onClick: () -> Unit) {
-    val backgroundColor = if (selected) Color(0xFF6200EE) else Color.LightGray
+    val backgroundColor = if (selected) Color(0xFF4B0082) else Color.LightGray
     val contentColor = if (selected) Color.White else Color.Black
 
     Box(

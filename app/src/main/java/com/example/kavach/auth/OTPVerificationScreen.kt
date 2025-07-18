@@ -43,7 +43,7 @@ fun OTPVerificationScreen(
     var otpCode by remember { mutableStateOf("") }
     val context = LocalContext.current
     val activity = context as ComponentActivity
-    val topBarColor = Color(0xFF6200EE)
+    val topBarColor = Color(0xFF4B0082)
 
     var showDialog1 by remember { mutableStateOf(false) }
     var showDialog2 by remember { mutableStateOf(false) }

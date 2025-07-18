@@ -46,7 +46,7 @@ fun MainScreen(
     navController: NavHostController,
     contactViewModel: ContactViewModel = viewModel()
 ) {
-    val topBarColor = Color(0xFF6200EE)
+    val topBarColor = Color(0xFF4B0082)
     val backgroundColor = Color(0xFFF3E5F5)
     val bottomBarColor = topBarColor
     val context = LocalContext.current
@@ -94,11 +94,15 @@ fun MainScreen(
                 BottomNavigationItem(
                     selected = false,
                     onClick = { navController.navigate("add_contact") },
-                    label = { Text("Contact") },
+                    label = { Text(
+                        text = "Contact",
+                        color = Color.White
+                    ) },
                     icon = {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_contact),
-                            contentDescription = "Contact icon"
+                            contentDescription = "Contact icon",
+                            tint = Color.White
                         )
                     },
                     alwaysShowLabel = true
@@ -106,11 +110,15 @@ fun MainScreen(
                 BottomNavigationItem(
                     selected = false,
                     onClick = { navController.navigate("rate_location") },
-                    label = { Text("Rating") },
+                    label = { Text(
+                        text = "Rating",
+                        color = Color.White
+                    ) },
                     icon = {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_location_rating),
-                            contentDescription = "Location rating"
+                            contentDescription = "Location rating",
+                            tint = Color.White
                         )
                     },
                     alwaysShowLabel = true
@@ -124,11 +132,15 @@ fun MainScreen(
                             restoreState = true
                         }
                     },
-                    label = { Text("Help") },
+                    label = { Text(
+                        text = "Help",
+                        color = Color.White
+                    ) },
                     icon = {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_info),
-                            contentDescription = "Help"
+                            contentDescription = "Help",
+                            tint = Color.White
                         )
                     },
                     alwaysShowLabel = true

@@ -36,7 +36,7 @@ fun AuthScreen(
     navController: NavController
 ) {
     val context = LocalContext.current
-    val topBarColor = Color(0xFF6200EE)
+    val topBarColor = Color(0xFF4B0082)
 
     var selectedMethod by remember { mutableStateOf(AuthMethod.PHONE) }
 

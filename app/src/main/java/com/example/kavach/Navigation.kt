@@ -8,6 +8,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.example.kavach.profile.AboutAppScreen
 import com.example.kavach.auth.*
 import com.example.kavach.contact.AddContactScreen
 import com.example.kavach.contact.ContactViewModel
@@ -127,6 +128,14 @@ fun AppNavigation(
 
         composable("add_contact") {
             AddContactScreen(navController)
+        }
+
+        composable("help_screen") {
+            HelpScreen(navController)
+        }
+
+        composable("about_app") {
+            AboutAppScreen(navController)
         }
 
         composable("user_info") {

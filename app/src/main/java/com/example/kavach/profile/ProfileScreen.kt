@@ -32,7 +32,7 @@ import kotlinx.coroutines.delay
 
 @Composable
 fun ProfileScreen(navController: NavHostController) {
-    val topBarColor = Color(0xFF6200EE)
+    val topBarColor = Color(0xFF4B0082)
     val backgroundColor = Color(0xFFF3E5F5)
     val user = FirebaseAuth.getInstance().currentUser
     val email = user?.email ?: "No Email Found"
@@ -231,7 +231,17 @@ fun ProfileScreen(navController: NavHostController) {
                                             .border(1.dp, Color.Gray, RoundedCornerShape(8.dp))
                                             .aspectRatio(1f)
                                             .clickable {
-                                                // TODO: Handle click
+                                                if (label == "My Contacts") {
+                                                    navController.navigate("add_contact")
+                                                }
+
+                                                if (label == "Safety Tips") {
+                                                    navController.navigate("help_screen")
+                                                }
+
+                                                if (label == "About App") {
+                                                    navController.navigate("about_app")
+                                                }
                                             },
                                         contentAlignment = Alignment.Center
                                     ) {
@@ -282,7 +292,7 @@ fun InfoCard(
     Card(
         shape = RoundedCornerShape(12.dp),
         elevation = 6.dp,
-        border = BorderStroke(1.dp, Color(0xFF6200EE)),
+        border = BorderStroke(1.dp, Color(0xFF4B0082)),
         backgroundColor = Color.White,
         modifier = Modifier
             .fillMaxWidth()
@@ -291,7 +301,7 @@ fun InfoCard(
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
             Text(
                 text = label,
-                color = Color(0xFF6200EE),
+                color = Color(0xFF4B0082),
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 12.sp,
                 modifier = Modifier.padding(bottom = 4.dp)

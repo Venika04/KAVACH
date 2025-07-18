@@ -71,7 +71,7 @@ fun AddContactScreen(
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
                     }
                 },
-                backgroundColor = Color(0xFF8000FF),
+                backgroundColor = Color(0xFF4B0082),
                 contentColor = Color.White,
             )
         },
@@ -90,7 +90,7 @@ fun AddContactScreen(
                 modifier = Modifier
                     .padding(end = 8.dp)
                     .size(60.dp)
-                    .background(Color(0xFF8000FF), shape = CircleShape)
+                    .background(Color(0xFF4B0082), shape = CircleShape)
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_add),
