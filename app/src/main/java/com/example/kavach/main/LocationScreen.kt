@@ -1,9 +1,9 @@
-package com.example.kavach.main // Replace with your actual package
+package com.example.kavach.main
 
 import android.Manifest
 import android.content.pm.PackageManager
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -22,7 +22,9 @@ fun LocationScreen() {
         if (ContextCompat.checkSelfPermission(context, locationPermission) == PackageManager.PERMISSION_GRANTED) {
             fusedLocationClient.lastLocation.addOnSuccessListener { location ->
                 if (location != null) {
-                    locationText = "Lat: ${location.latitude}, Lng: ${location.longitude}"
+                    val latDMS = convertToDMS(location.latitude, isLatitude = true)
+                    val lonDMS = convertToDMS(location.longitude, isLatitude = false)
+                    locationText = "Latitude: $latDMS\nLongitude: $lonDMS"
                 } else {
                     locationText = "Unable to get location"
                 }
@@ -33,4 +35,22 @@ fun LocationScreen() {
     }
 
     Text(text = locationText, modifier = Modifier.padding(16.dp))
+}
+
+// 🔁 Helper function to convert decimal degrees to DMS format
+fun convertToDMS(value: Double, isLatitude: Boolean): String {
+    val absolute = kotlin.math.abs(value)
+    val degrees = absolute.toInt()
+    val minutesFloat = (absolute - degrees) * 60
+    val minutes = minutesFloat.toInt()
+    val seconds = ((minutesFloat - minutes) * 60).toInt()
+
+    val direction = when {
+        isLatitude && value >= 0 -> "N"
+        isLatitude && value < 0 -> "S"
+        !isLatitude && value >= 0 -> "E"
+        else -> "W"
+    }
+
+    return "%d°%d'%d\" %s".format(degrees, minutes, seconds, direction)
 }
