@@ -4,7 +4,6 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
-import android.hardware.Sensor
 import android.location.Location
 import android.media.MediaPlayer
 import android.telephony.SmsManager
@@ -31,16 +30,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.kavach.R
 import com.example.kavach.contact.ContactViewModel
-import com.example.kavach.main.util.ShakeDetector
+import com.example.kavach.guardian.GuardianPinDialog
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.android.gms.location.LocationServices
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import android.hardware.SensorManager
-import com.example.kavach.guardian.GuardianPinDialog
-import com.example.kavach.guardian.GuardianPINManager
-
-
 
 @SuppressLint("ServiceCast")
 @OptIn(ExperimentalPermissionsApi::class)
@@ -53,19 +47,13 @@ fun MainScreen(
     val backgroundColor = Color(0xFFF3E5F5)
     val bottomBarColor = topBarColor
     val context = LocalContext.current
+
     val contactViewModel: ContactViewModel = viewModel()
     var isSosActive by remember { mutableStateOf(false) }
     var showPinDialog by remember { mutableStateOf(false) }
+    var showConfirmationDialog by remember { mutableStateOf(false) }
     var alarmPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
-
-//    LaunchedEffect(Unit) {
-//        val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
-////        val shakeDetector = ShakeDetector {
-////            triggerSOS(context, contactViewModel)
-////        }
-//        val accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
-//        sensorManager.registerListener(shakeDetector, accelerometer, SensorManager.SENSOR_DELAY_UI)
-//    }
+    var lastSosDocId by remember { mutableStateOf<String?>(null) }
 
     Scaffold(
         topBar = {
@@ -100,10 +88,7 @@ fun MainScreen(
                 BottomNavigationItem(
                     selected = false,
                     onClick = { navController.navigate("add_contact") },
-                    label = { Text(
-                        text = "Contact",
-                        color = Color.White
-                    ) },
+                    label = { Text("Contact", color = Color.White) },
                     icon = {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_contact),
@@ -116,10 +101,7 @@ fun MainScreen(
                 BottomNavigationItem(
                     selected = false,
                     onClick = { navController.navigate("rate_location") },
-                    label = { Text(
-                        text = "Rating",
-                        color = Color.White
-                    ) },
+                    label = { Text("Rating", color = Color.White) },
                     icon = {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_location_rating),
@@ -138,10 +120,7 @@ fun MainScreen(
                             restoreState = true
                         }
                     },
-                    label = { Text(
-                        text = "Help",
-                        color = Color.White
-                    ) },
+                    label = { Text("Help", color = Color.White) },
                     icon = {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_info),
@@ -169,12 +148,12 @@ fun MainScreen(
             ) {
                 LocationBox()
                 Spacer(modifier = Modifier.height(40.dp))
-//                SOSButton { triggerSOS(context, contactViewModel) }
                 if (!isSosActive) {
                     SOSButton {
-                        triggerSOS(context, contactViewModel) { player ->
+                        triggerSOS(context, contactViewModel) { player, docId ->
                             alarmPlayer = player
                             isSosActive = true
+                            lastSosDocId = docId
                         }
                     }
                 } else {
@@ -187,23 +166,52 @@ fun MainScreen(
                         Text("Cancel", color = Color.White, fontSize = 16.sp)
                     }
                 }
-
             }
+
+            // Guardian PIN dialog
             if (showPinDialog) {
                 GuardianPinDialog(
                     onDismiss = { showPinDialog = false },
                     onPinValidated = {
-                        // Stop the alarm and SOS
                         alarmPlayer?.stop()
                         alarmPlayer?.release()
                         alarmPlayer = null
                         isSosActive = false
                         showPinDialog = false
+                        showConfirmationDialog = true
                         Toast.makeText(context, "SOS Cancelled Successfully", Toast.LENGTH_SHORT).show()
                     }
                 )
             }
 
+            // Confirmation dialog (mistake or real)
+            if (showConfirmationDialog) {
+                AlertDialog(
+                    onDismissRequest = { showConfirmationDialog = false },
+                    title = { Text("SOS Confirmation") },
+                    text = { Text("Was the SOS triggered by mistake or was it real danger?") },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            sendFollowUpSMS(context, contactViewModel, "real")
+                            recordSosResponse(lastSosDocId, "real")
+                            showConfirmationDialog = false
+                            Toast.makeText(context, "Marked as real danger", Toast.LENGTH_SHORT).show()
+                        }) {
+                            Text("Real Danger")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = {
+                            sendFollowUpSMS(context, contactViewModel, "mistake")
+                            recordSosResponse(lastSosDocId, "mistake")
+                            showConfirmationDialog = false
+                            Toast.makeText(context, "Marked as mistake", Toast.LENGTH_SHORT).show()
+                        }) {
+                            Text("Mistake")
+                        }
+                    }
+                )
+            }
         }
     }
 }
@@ -217,7 +225,7 @@ fun LocationBox() {
 fun triggerSOS(
     context: Context,
     contactViewModel: ContactViewModel,
-    onAlarmStarted: (MediaPlayer) -> Unit
+    onAlarmStarted: (MediaPlayer, String?) -> Unit
 ) {
     val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
 
@@ -230,7 +238,6 @@ fun triggerSOS(
     }
 
     contactViewModel.fetchContacts()
-
     fusedLocationClient.lastLocation.addOnSuccessListener { location: Location? ->
         if (location != null) {
             val lat = location.latitude
@@ -242,6 +249,7 @@ fun triggerSOS(
                 return@addOnSuccessListener
             }
 
+            // Send initial SOS SMS
             contactViewModel.contactList.forEach { contact ->
                 try {
                     SmsManager.getDefault().sendTextMessage(contact.phone, null, message, null, null)
@@ -252,6 +260,7 @@ fun triggerSOS(
                 }
             }
 
+            // Store in Firestore
             val userId = FirebaseAuth.getInstance().currentUser?.uid ?: "anonymous"
             val sosData = mapOf(
                 "latitude" to lat,
@@ -259,17 +268,15 @@ fun triggerSOS(
                 "timestamp" to System.currentTimeMillis(),
                 "userId" to userId
             )
-            FirebaseFirestore.getInstance().collection("sos_alerts").add(sosData)
-
-            // Play looping alarm sound
-            val alarmPlayer = MediaPlayer.create(context, R.raw.alarm)
-            alarmPlayer.isLooping = true
-            alarmPlayer.start()
-
-            // Notify the UI that alarm started
-            onAlarmStarted(alarmPlayer)
-
-            Toast.makeText(context, "SOS Sent to Contacts", Toast.LENGTH_SHORT).show()
+            FirebaseFirestore.getInstance().collection("sos_alerts")
+                .add(sosData)
+                .addOnSuccessListener { docRef ->
+                    val alarmPlayer = MediaPlayer.create(context, R.raw.alarm)
+                    alarmPlayer.isLooping = true
+                    alarmPlayer.start()
+                    onAlarmStarted(alarmPlayer, docRef.id)
+                    Toast.makeText(context, "SOS Sent to Contacts", Toast.LENGTH_SHORT).show()
+                }
         } else {
             Toast.makeText(context, "Could not fetch location", Toast.LENGTH_SHORT).show()
         }
@@ -278,6 +285,40 @@ fun triggerSOS(
     }
 }
 
+// Sends follow-up SMS after user chooses (mistake or real)
+@SuppressLint("MissingPermission")
+fun sendFollowUpSMS(context: Context, contactViewModel: ContactViewModel, responseType: String) {
+    val smsManager = SmsManager.getDefault()
+    val message = when (responseType) {
+        "mistake" -> "Update: The previous SOS alert was triggered by mistake. No danger now."
+        else -> "Update: The previous SOS alert was real. Assistance is still required!"
+    }
+
+    contactViewModel.fetchContacts()
+    if (contactViewModel.contactList.isEmpty()) {
+        Toast.makeText(context, "No emergency contacts available", Toast.LENGTH_SHORT).show()
+        return
+    }
+
+    contactViewModel.contactList.forEach { contact ->
+        try {
+            smsManager.sendTextMessage(contact.phone, null, message, null, null)
+            Log.d("KavachSOS", "Follow-up SMS sent to ${contact.phone}")
+        } catch (e: Exception) {
+            Log.e("KavachSOS", "Failed to send follow-up SMS to ${contact.phone}", e)
+        }
+    }
+}
+
+// Updates Firestore record with the response type
+fun recordSosResponse(documentId: String?, response: String) {
+    if (documentId == null) return
+    val db = FirebaseFirestore.getInstance()
+    db.collection("sos_alerts").document(documentId)
+        .update("response", response)
+        .addOnSuccessListener { Log.d("KavachSOS", "Response updated successfully") }
+        .addOnFailureListener { Log.e("KavachSOS", "Failed to update response", it) }
+}
 
 @Composable
 fun SOSButton(onClick: () -> Unit) {
