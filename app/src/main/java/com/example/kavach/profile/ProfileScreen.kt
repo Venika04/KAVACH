@@ -13,6 +13,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
+import androidx.compose.material.Button
+import androidx.compose.material.ButtonDefaults
+import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.runtime.*
@@ -210,8 +213,20 @@ fun ProfileScreen(navController: NavHostController) {
                     }
 
                     Spacer(modifier = Modifier.height(24.dp))
-                }
 
+                    // ✅ FIXED: Guardian PIN Button is now properly wrapped in item{}
+                    Button(
+                        onClick = { navController.navigate("set_guardian_pin") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp),
+                        colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF4B0082))
+                    ) {
+                        Text("Set Guardian PIN", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
 
                 val items = listOf("My Contacts", "Location History", "Safety Tips", "About App")
                 val chunkedItems = items.chunked(2)
@@ -234,11 +249,9 @@ fun ProfileScreen(navController: NavHostController) {
                                                 if (label == "My Contacts") {
                                                     navController.navigate("add_contact")
                                                 }
-
                                                 if (label == "Safety Tips") {
                                                     navController.navigate("help_screen")
                                                 }
-
                                                 if (label == "About App") {
                                                     navController.navigate("about_app")
                                                 }
@@ -269,11 +282,6 @@ fun ProfileScreen(navController: NavHostController) {
                     confirmButton = {
                         TextButton(onClick = { showDialog = false }) {
                             Text("OK")
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { showDialog = false }) {
-                            Text("Cancel")
                         }
                     }
                 )

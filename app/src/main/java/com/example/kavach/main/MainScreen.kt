@@ -37,6 +37,9 @@ import com.google.android.gms.location.LocationServices
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import android.hardware.SensorManager
+import com.example.kavach.guardian.GuardianPinDialog
+import com.example.kavach.guardian.GuardianPINManager
+
 
 
 @SuppressLint("ServiceCast")
@@ -51,15 +54,18 @@ fun MainScreen(
     val bottomBarColor = topBarColor
     val context = LocalContext.current
     val contactViewModel: ContactViewModel = viewModel()
+    var isSosActive by remember { mutableStateOf(false) }
+    var showPinDialog by remember { mutableStateOf(false) }
+    var alarmPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
 
-    LaunchedEffect(Unit) {
-        val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
-        val shakeDetector = ShakeDetector {
-            triggerSOS(context, contactViewModel)
-        }
-        val accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
-        sensorManager.registerListener(shakeDetector, accelerometer, SensorManager.SENSOR_DELAY_UI)
-    }
+//    LaunchedEffect(Unit) {
+//        val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+////        val shakeDetector = ShakeDetector {
+////            triggerSOS(context, contactViewModel)
+////        }
+//        val accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+//        sensorManager.registerListener(shakeDetector, accelerometer, SensorManager.SENSOR_DELAY_UI)
+//    }
 
     Scaffold(
         topBar = {
@@ -163,8 +169,41 @@ fun MainScreen(
             ) {
                 LocationBox()
                 Spacer(modifier = Modifier.height(40.dp))
-                SOSButton { triggerSOS(context, contactViewModel) }
+//                SOSButton { triggerSOS(context, contactViewModel) }
+                if (!isSosActive) {
+                    SOSButton {
+                        triggerSOS(context, contactViewModel) { player ->
+                            alarmPlayer = player
+                            isSosActive = true
+                        }
+                    }
+                } else {
+                    Button(
+                        onClick = { showPinDialog = true },
+                        shape = CircleShape,
+                        colors = ButtonDefaults.buttonColors(backgroundColor = Color.Gray),
+                        modifier = Modifier.size(100.dp)
+                    ) {
+                        Text("Cancel", color = Color.White, fontSize = 16.sp)
+                    }
+                }
+
             }
+            if (showPinDialog) {
+                GuardianPinDialog(
+                    onDismiss = { showPinDialog = false },
+                    onPinValidated = {
+                        // Stop the alarm and SOS
+                        alarmPlayer?.stop()
+                        alarmPlayer?.release()
+                        alarmPlayer = null
+                        isSosActive = false
+                        showPinDialog = false
+                        Toast.makeText(context, "SOS Cancelled Successfully", Toast.LENGTH_SHORT).show()
+                    }
+                )
+            }
+
         }
     }
 }
@@ -175,7 +214,11 @@ fun LocationBox() {
 }
 
 @SuppressLint("MissingPermission")
-fun triggerSOS(context: Context, contactViewModel: ContactViewModel) {
+fun triggerSOS(
+    context: Context,
+    contactViewModel: ContactViewModel,
+    onAlarmStarted: (MediaPlayer) -> Unit
+) {
     val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
 
     if (
@@ -194,7 +237,6 @@ fun triggerSOS(context: Context, contactViewModel: ContactViewModel) {
             val lon = location.longitude
             val message = "SOS! I need help. My location: https://maps.google.com/?q=$lat,$lon"
 
-            // Send SMS
             if (contactViewModel.contactList.isEmpty()) {
                 Toast.makeText(context, "No emergency contacts available", Toast.LENGTH_SHORT).show()
                 return@addOnSuccessListener
@@ -210,7 +252,6 @@ fun triggerSOS(context: Context, contactViewModel: ContactViewModel) {
                 }
             }
 
-            // Upload location to Firestore
             val userId = FirebaseAuth.getInstance().currentUser?.uid ?: "anonymous"
             val sosData = mapOf(
                 "latitude" to lat,
@@ -220,9 +261,13 @@ fun triggerSOS(context: Context, contactViewModel: ContactViewModel) {
             )
             FirebaseFirestore.getInstance().collection("sos_alerts").add(sosData)
 
-            // Play alarm
+            // Play looping alarm sound
             val alarmPlayer = MediaPlayer.create(context, R.raw.alarm)
+            alarmPlayer.isLooping = true
             alarmPlayer.start()
+
+            // Notify the UI that alarm started
+            onAlarmStarted(alarmPlayer)
 
             Toast.makeText(context, "SOS Sent to Contacts", Toast.LENGTH_SHORT).show()
         } else {
@@ -232,6 +277,7 @@ fun triggerSOS(context: Context, contactViewModel: ContactViewModel) {
         Toast.makeText(context, "Failed to get location.", Toast.LENGTH_SHORT).show()
     }
 }
+
 
 @Composable
 fun SOSButton(onClick: () -> Unit) {

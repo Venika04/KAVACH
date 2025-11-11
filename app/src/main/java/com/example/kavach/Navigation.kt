@@ -12,6 +12,7 @@ import com.example.kavach.profile.AboutAppScreen
 import com.example.kavach.auth.*
 import com.example.kavach.contact.AddContactScreen
 import com.example.kavach.contact.ContactViewModel
+import com.example.kavach.guardian.SetGuardianPinScreen
 import com.example.kavach.help.HelpScreen
 import com.example.kavach.main.MainScreen
 import com.example.kavach.profile.ProfileScreen
@@ -196,5 +197,10 @@ fun AppNavigation(
         composable("help") {
             HelpScreen(navController = navController)
         }
+
+        composable("set_guardian_pin") {
+            SetGuardianPinScreen(onPinSet = { navController.popBackStack() })
+        }
+
     }
 }
