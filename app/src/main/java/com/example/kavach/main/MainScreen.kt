@@ -2,10 +2,14 @@ package com.example.kavach.main
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.location.Location
 import android.media.MediaPlayer
+import android.os.Build
 import android.telephony.SmsManager
 import android.util.Log
 import android.widget.Toast
@@ -236,6 +240,8 @@ fun triggerSOS(
         Toast.makeText(context, "Please grant Location and SMS permissions", Toast.LENGTH_LONG).show()
         return
     }
+
+    Log.d("KavachSOS", "triggerSOS called successfully")
 
     contactViewModel.fetchContacts()
     fusedLocationClient.lastLocation.addOnSuccessListener { location: Location? ->
