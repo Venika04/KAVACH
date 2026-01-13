@@ -89,31 +89,43 @@ class FloatingSOSService : Service() {
         showCancelOverlay(initial = true)
 
         probationTimer = object : CountDownTimer(5000, 1000) {
-            override fun onTick(millisUntilFinished: Long) {}
+            override fun onTick(millisUntilFinished: Long) {
+                val secondsLeft = (millisUntilFinished / 1000).toInt() + 1
+                // Update countdown text on overlay
+                cancelView?.findViewById<TextView>(R.id.tvCountdown)?.text =
+                    "Triggering SOS in $secondsLeft sec"
+            }
+
             override fun onFinish() {
                 probationTimer = null
                 removeCancelOverlay()
                 triggerSOS()
             }
         }.start()
+
     }
 
-    private fun showCancelOverlay(initial: Boolean) {
+    private fun showCancelOverlay(initial: Boolean, remainingSeconds: Int = 5) {
         cancelView = LayoutInflater.from(this).inflate(R.layout.dialog_cancel_sos, null)
 
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-            else WindowManager.LayoutParams.TYPE_PHONE,
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+            else
+                WindowManager.LayoutParams.TYPE_PHONE,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT
         )
         params.gravity = Gravity.CENTER
 
         val cancelBtn = cancelView!!.findViewById<TextView>(R.id.btnCancel)
+        // Assuming you have a TextView in the overlay to show countdown
+        val countdownText = cancelView!!.findViewById<TextView>(R.id.tvCountdown)
+        countdownText.text = "Tab to cancel"
+
         cancelBtn.setOnClickListener {
-            // Stop probation timer if running
             probationTimer?.cancel()
             probationTimer = null
 

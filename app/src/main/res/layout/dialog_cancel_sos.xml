@@ -1,32 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
-    android:padding="20dp"
-    android:background="@drawable/sos_circle"
+    android:padding="24dp"
+    android:background="@drawable/rounded_background"
+    android:gravity="center"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content">
 
+    <!-- Countdown Text -->
     <TextView
-        android:id="@+id/txtTitle"
-        android:text="Send SOS?"
+        android:id="@+id/tvCountdown"
+        android:text="Cancelling in 5 sec"
         android:textSize="18sp"
-        android:textStyle="bold"
         android:textColor="@android:color/black"
-        android:layout_marginBottom="8dp"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        android:paddingBottom="16dp" />
 
+    <!-- Cancel Button -->
     <TextView
-        android:id="@+id/txtTimer"
-        android:text="Sending in 5..."
-        android:textSize="16sp"
-        android:layout_marginBottom="16dp"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
-
-    <Button
         android:id="@+id/btnCancel"
-        android:text="CANCEL"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        android:text="Cancel SOS"
+        android:textSize="16sp"
+        android:textColor="@android:color/white"
+        android:background="@android:color/holo_red_light"
+        android:padding="12dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:layout_marginTop="8dp" />
+
 </LinearLayout>
