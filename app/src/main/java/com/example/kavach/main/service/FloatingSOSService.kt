@@ -15,18 +15,21 @@ import android.os.Vibrator
 import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
+import android.view.MotionEvent
+import android.view.View
 import android.view.WindowManager
 import android.widget.TextView
 import android.widget.Toast
-import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationCompat
 import com.example.kavach.R
 import com.example.kavach.main.util.SOSRepository
+import kotlin.math.abs
 
 class FloatingSOSService : Service() {
 
     private lateinit var windowManager: WindowManager
-    private lateinit var floatingView: android.view.View
-    private var cancelView: android.view.View? = null
+    private lateinit var floatingView: View
+    private var cancelView: View? = null
     private var probationTimer: CountDownTimer? = null
     private var alarmPlayer: MediaPlayer? = null
 
@@ -43,7 +46,7 @@ class FloatingSOSService : Service() {
             getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
         }
 
-        val notification = androidx.core.app.NotificationCompat.Builder(this, channelId)
+        val notification = NotificationCompat.Builder(this, channelId)
             .setContentTitle("Kavach Active")
             .setContentText("Floating SOS is running")
             .setSmallIcon(R.drawable.ic_launcher_foreground)
@@ -58,31 +61,74 @@ class FloatingSOSService : Service() {
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-            else WindowManager.LayoutParams.TYPE_PHONE,
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+            else
+                WindowManager.LayoutParams.TYPE_PHONE,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT
         )
 
-        params.gravity = Gravity.BOTTOM or Gravity.START
+        params.gravity = Gravity.TOP or Gravity.START
         params.x = 40
-        params.y = 250
+        params.y = 300
 
         floatingView = LayoutInflater.from(this).inflate(R.layout.floating_sos, null)
 
         val sosButton = floatingView.findViewById<TextView>(R.id.btnSOS)
-        sosButton.setOnClickListener {
-            if (probationTimer != null) return@setOnClickListener
 
-            Log.d("FloatingSOS", "Floating SOS tapped")
-            Toast.makeText(this, "SOS initiated", Toast.LENGTH_SHORT).show()
-            vibrate()
-            animateButton(sosButton)
+        // 👉 DRAG VARIABLES
+        var initialX = 0
+        var initialY = 0
+        var initialTouchX = 0f
+        var initialTouchY = 0f
 
-            startProbationPeriod()
+        sosButton.setOnTouchListener { _, event ->
+            when (event.action) {
+
+                MotionEvent.ACTION_DOWN -> {
+                    initialX = params.x
+                    initialY = params.y
+                    initialTouchX = event.rawX
+                    initialTouchY = event.rawY
+                    true
+                }
+
+                MotionEvent.ACTION_MOVE -> {
+                    params.x = initialX + (event.rawX - initialTouchX).toInt()
+                    params.y = initialY + (event.rawY - initialTouchY).toInt()
+                    windowManager.updateViewLayout(floatingView, params)
+                    true
+                }
+
+                MotionEvent.ACTION_UP -> {
+                    val dx = abs(event.rawX - initialTouchX)
+                    val dy = abs(event.rawY - initialTouchY)
+
+                    // 👉 If movement is small → treat as click
+                    if (dx < 10 && dy < 10) {
+                        handleSOSClick(sosButton)
+                    }
+                    true
+                }
+
+                else -> false
+            }
         }
 
         windowManager.addView(floatingView, params)
+    }
+
+    // 👉 Extracted click logic
+    private fun handleSOSClick(sosButton: TextView) {
+        if (probationTimer != null) return
+
+        Log.d("FloatingSOS", "Floating SOS tapped")
+        Toast.makeText(this, "SOS initiated", Toast.LENGTH_SHORT).show()
+        vibrate()
+        animateButton(sosButton)
+
+        startProbationPeriod()
     }
 
     private fun startProbationPeriod() {
@@ -91,7 +137,6 @@ class FloatingSOSService : Service() {
         probationTimer = object : CountDownTimer(5000, 1000) {
             override fun onTick(millisUntilFinished: Long) {
                 val secondsLeft = (millisUntilFinished / 1000).toInt() + 1
-                // Update countdown text on overlay
                 cancelView?.findViewById<TextView>(R.id.tvCountdown)?.text =
                     "Triggering SOS in $secondsLeft sec"
             }
@@ -102,7 +147,6 @@ class FloatingSOSService : Service() {
                 triggerSOS()
             }
         }.start()
-
     }
 
     private fun showCancelOverlay(initial: Boolean, remainingSeconds: Int = 5) {
@@ -121,15 +165,13 @@ class FloatingSOSService : Service() {
         params.gravity = Gravity.CENTER
 
         val cancelBtn = cancelView!!.findViewById<TextView>(R.id.btnCancel)
-        // Assuming you have a TextView in the overlay to show countdown
         val countdownText = cancelView!!.findViewById<TextView>(R.id.tvCountdown)
-        countdownText.text = "Tab to cancel"
+        countdownText.text = "Tap to cancel"
 
         cancelBtn.setOnClickListener {
             probationTimer?.cancel()
             probationTimer = null
 
-            // Stop alarm if playing
             alarmPlayer?.stop()
             alarmPlayer?.release()
             alarmPlayer = null
@@ -149,15 +191,12 @@ class FloatingSOSService : Service() {
     }
 
     private fun triggerSOS() {
-        // Send SMS
         SOSRepository.triggerSOS(this)
 
-        // Play alarm
         alarmPlayer = MediaPlayer.create(this, R.raw.alarm)
         alarmPlayer?.isLooping = true
         alarmPlayer?.start()
 
-        // Stop alarm after 15s automatically
         object : CountDownTimer(15000, 15000) {
             override fun onTick(millisUntilFinished: Long) {}
             override fun onFinish() {
@@ -167,7 +206,6 @@ class FloatingSOSService : Service() {
             }
         }.start()
 
-        // Show cancel button so user can stop alarm manually
         showCancelOverlay(initial = false)
     }
 
