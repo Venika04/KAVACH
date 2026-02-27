@@ -14,12 +14,12 @@ import androidx.compose.ui.Modifier
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.navigation.compose.rememberNavController
+import com.example.kavach.guardian.GuardianPINManager // ✅ ADDED
 import com.example.kavach.main.service.FloatingSOSService
 import com.example.kavach.main.service.ShakeService
 import com.example.kavach.ui.theme.KavachTheme
 import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
-
 
 class MainActivity : ComponentActivity() {
 
@@ -53,20 +53,23 @@ class MainActivity : ComponentActivity() {
 
         FirebaseApp.initializeApp(this)
 
+        // 🔐 IMPORTANT: Ensure default Guardian PIN exists (0000)
+        GuardianPINManager.ensureDefaultPIN(this)
+
         // Existing permissions
         checkAndRequestPermissions()
 
-        // 🔴 ADDED: Overlay permission (non-intrusive)
+        // Overlay permission
         checkOverlayPermission()
 
-        // Existing Shake Service
+        // Start Shake Service
         val shakeServiceIntent = Intent(this, ShakeService::class.java)
         startService(shakeServiceIntent)
 
+        // Start Floating SOS Service if permission granted
         if (Settings.canDrawOverlays(this)) {
             startService(Intent(this, FloatingSOSService::class.java))
         }
-
 
         setContent {
             val navController = rememberNavController()
@@ -85,14 +88,12 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-
     override fun onResume() {
         super.onResume()
 
+        // Start Floating SOS only after overlay permission granted
         if (Settings.canDrawOverlays(this)) {
-            // Start floating SOS only after permission is granted
             startService(Intent(this, FloatingSOSService::class.java))
         }
     }
-
 }

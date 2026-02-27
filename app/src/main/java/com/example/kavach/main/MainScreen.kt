@@ -16,6 +16,7 @@ import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -39,6 +40,7 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.android.gms.location.LocationServices
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.example.kavach.guardian.GuardianPINManager
 
 @SuppressLint("ServiceCast")
 @OptIn(ExperimentalPermissionsApi::class)
@@ -151,6 +153,10 @@ fun MainScreen(
                     .padding(top = 40.dp)
             ) {
                 LocationBox()
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // 🔐 ADD THIS BANNER HERE
+                GuardianPinStatusBanner(navController)
                 Spacer(modifier = Modifier.height(40.dp))
                 if (!isSosActive) {
                     SOSButton {
@@ -335,5 +341,50 @@ fun SOSButton(onClick: () -> Unit) {
         modifier = Modifier.size(100.dp)
     ) {
         Text("SOS", color = Color.White, fontSize = 18.sp)
+    }
+}
+@Composable
+fun GuardianPinStatusBanner(navController: NavHostController) {
+    val context = LocalContext.current
+    val savedPin = GuardianPINManager.getPIN(context)
+
+    val isDefaultPin = savedPin == "0000"
+
+    Card(
+        backgroundColor = if (isDefaultPin) Color(0xFFFFCDD2) else Color(0xFFC8E6C9),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp)
+        ) {
+
+            // Centered Text
+            Text(
+                text = if (isDefaultPin)
+                    "⚠ Default PIN is active. Tap to update."
+                else
+                    "✔ Guardian PIN is set",
+                color = Color.Black,
+                fontSize = 14.sp,
+                modifier = Modifier.align(Alignment.Center)
+            )
+
+            // Button on right side
+            if (isDefaultPin) {
+                TextButton(
+                    onClick = {
+                        navController.navigate("set_guardian_pin")
+                    },
+                    modifier = Modifier.align(Alignment.CenterEnd)
+                ) {
+                    Text("Update")
+                }
+            }
+        }
+
     }
 }

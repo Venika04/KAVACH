@@ -9,16 +9,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavHostController
-import com.example.kavach.guardian.GuardianPINManager
 
 @Composable
 fun SetGuardianPinScreen(
     onPinSet: () -> Unit
 ) {
     val context = LocalContext.current
+
     var pin by remember { mutableStateOf("") }
     var confirmPin by remember { mutableStateOf("") }
+
+    // 🔐 Get saved PIN (default will be 0000 if not set)
+    val savedPin = GuardianPINManager.getPIN(context)
 
     Column(
         modifier = Modifier
@@ -27,7 +29,28 @@ fun SetGuardianPinScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text("Set Guardian PIN", style = MaterialTheme.typography.headlineMedium)
+
+        Text(
+            text = "Set Guardian PIN",
+            style = MaterialTheme.typography.headlineMedium
+        )
+
+        Spacer(Modifier.height(16.dp))
+
+        // 🔥 STATUS MESSAGE
+        if (savedPin == "0000") {
+            Text(
+                text = "Default PIN is 0000. Please change it for security.",
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        } else {
+            Text(
+                text = "Guardian PIN is already set",
+                color = MaterialTheme.colorScheme.primary,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
 
         Spacer(Modifier.height(24.dp))
 
@@ -49,17 +72,25 @@ fun SetGuardianPinScreen(
 
         Spacer(Modifier.height(24.dp))
 
-        Button(onClick = {
-            if (pin.length != 4) {
-                Toast.makeText(context, "PIN must be 4 digits", Toast.LENGTH_SHORT).show()
-            } else if (pin != confirmPin) {
-                Toast.makeText(context, "PINs do not match", Toast.LENGTH_SHORT).show()
-            } else {
-                GuardianPINManager.setPIN(context, pin)
-                Toast.makeText(context, "Guardian PIN set successfully!", Toast.LENGTH_SHORT).show()
-                onPinSet()
+        Button(
+            onClick = {
+                when {
+                    pin.length != 4 -> {
+                        Toast.makeText(context, "PIN must be 4 digits", Toast.LENGTH_SHORT).show()
+                    }
+
+                    pin != confirmPin -> {
+                        Toast.makeText(context, "PINs do not match", Toast.LENGTH_SHORT).show()
+                    }
+
+                    else -> {
+                        GuardianPINManager.setPIN(context, pin)
+                        Toast.makeText(context, "Guardian PIN set successfully!", Toast.LENGTH_SHORT).show()
+                        onPinSet()
+                    }
+                }
             }
-        }) {
+        ) {
             Text("Save PIN")
         }
     }
