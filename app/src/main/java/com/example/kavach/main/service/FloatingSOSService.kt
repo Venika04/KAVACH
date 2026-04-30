@@ -121,14 +121,20 @@ class FloatingSOSService : Service() {
 
     // 👉 Extracted click logic
     private fun handleSOSClick(sosButton: TextView) {
-        if (probationTimer != null) return
-
         Log.d("FloatingSOS", "Floating SOS tapped")
-        Toast.makeText(this, "SOS initiated", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "Opening Kavach SOS", Toast.LENGTH_SHORT).show()
+
         vibrate()
         animateButton(sosButton)
 
-        startProbationPeriod()
+        val intent = Intent(
+            this@FloatingSOSService,
+            com.example.kavach.MainActivity::class.java
+        )
+        intent.putExtra("START_FLOATING_SOS", true)
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+
+        startActivity(intent)
     }
 
     private fun startProbationPeriod() {
@@ -169,15 +175,13 @@ class FloatingSOSService : Service() {
         countdownText.text = "Tap to cancel"
 
         cancelBtn.setOnClickListener {
-            probationTimer?.cancel()
-            probationTimer = null
 
-            alarmPlayer?.stop()
-            alarmPlayer?.release()
-            alarmPlayer = null
+            val intent = Intent(this, com.example.kavach.MainActivity::class.java)
+            intent.putExtra("SHOW_PIN_DIALOG", true)
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            startActivity(intent)
 
-            removeCancelOverlay()
-            Toast.makeText(this, "SOS cancelled", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Enter PIN to cancel SOS", Toast.LENGTH_SHORT).show()
         }
 
         windowManager.addView(cancelView, params)
@@ -191,12 +195,21 @@ class FloatingSOSService : Service() {
     }
 
     private fun triggerSOS() {
+
+        // 1. Trigger backend SOS (SMS + Firestore)
         SOSRepository.triggerSOS(this)
 
+        // 2. 🚀 IMMEDIATELY bring app to foreground
+        val intent = Intent(this@FloatingSOSService, com.example.kavach.MainActivity::class.java)
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        startActivity(intent)
+
+        // 3. 🔔 Start alarm
         alarmPlayer = MediaPlayer.create(this, R.raw.alarm)
         alarmPlayer?.isLooping = true
         alarmPlayer?.start()
 
+        // 4. Stop alarm after 15 sec
         object : CountDownTimer(15000, 15000) {
             override fun onTick(millisUntilFinished: Long) {}
             override fun onFinish() {
@@ -206,6 +219,7 @@ class FloatingSOSService : Service() {
             }
         }.start()
 
+        // 5. Show cancel overlay (optional)
         showCancelOverlay(initial = false)
     }
 

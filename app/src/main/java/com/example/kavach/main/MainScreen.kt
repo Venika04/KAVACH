@@ -54,12 +54,56 @@ fun MainScreen(
     val bottomBarColor = topBarColor
     val context = LocalContext.current
 
+
     val contactViewModel: ContactViewModel = viewModel()
     var isSosActive by remember { mutableStateOf(false) }
     var showPinDialog by remember { mutableStateOf(false) }
     var showConfirmationDialog by remember { mutableStateOf(false) }
     var alarmPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
     var lastSosDocId by remember { mutableStateOf<String?>(null) }
+    var showFloatingCountdown by remember { mutableStateOf(false) }
+    var countdown by remember { mutableStateOf(5) }
+
+    val activity = (context as? android.app.Activity)
+//    val showPinFromService = activity?.intent?.getBooleanExtra("SHOW_PIN_DIALOG", false) ?: false
+    val startFloatingSOS =
+        activity?.intent?.getBooleanExtra("START_FLOATING_SOS", false) ?: false
+
+    LaunchedEffect(startFloatingSOS) {
+        if (startFloatingSOS) {
+            showFloatingCountdown = true
+            activity?.intent?.removeExtra("START_FLOATING_SOS")
+        }
+    }
+
+    LaunchedEffect(showFloatingCountdown) {
+        if (showFloatingCountdown) {
+
+            countdown = 5
+
+            while (countdown > 0 && showFloatingCountdown) {
+                kotlinx.coroutines.delay(1000)
+                countdown--
+            }
+
+            if (showFloatingCountdown && countdown == 0) {
+
+                showFloatingCountdown = false
+
+                // ✅ DO NOT BLOCK HERE
+                isSosActive = true
+
+                triggerSOS(context, contactViewModel) { player, docId ->
+                    alarmPlayer = player
+                    lastSosDocId = docId
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        contactViewModel.fetchContacts()
+    }
 
     Scaffold(
         topBar = {
@@ -186,10 +230,39 @@ fun MainScreen(
                         alarmPlayer?.stop()
                         alarmPlayer?.release()
                         alarmPlayer = null
+
                         isSosActive = false
+
+                        // 🔥 FIX: close everything properly
                         showPinDialog = false
-                        showConfirmationDialog = true
-                        Toast.makeText(context, "SOS Cancelled Successfully", Toast.LENGTH_SHORT).show()
+                        showFloatingCountdown = false
+                        showConfirmationDialog = false
+
+                        Toast.makeText(
+                            context,
+                            "SOS Cancelled Successfully",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                )
+            }
+
+// -----------------------------
+
+// ✅ ADD THIS BLOCK (COUNTDOWN UI)
+            if (showFloatingCountdown) {
+                AlertDialog(
+                    onDismissRequest = {},
+                    title = { Text("SOS Countdown") },
+                    text = { Text("Sending SOS in $countdown seconds") },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                showPinDialog = true
+                            }
+                        ) {
+                            Text("Cancel")
+                        }
                     }
                 )
             }
@@ -258,7 +331,6 @@ fun triggerSOS(
 
             if (contactViewModel.contactList.isEmpty()) {
                 Toast.makeText(context, "No emergency contacts available", Toast.LENGTH_SHORT).show()
-                return@addOnSuccessListener
             }
 
             // Send initial SOS SMS
@@ -290,11 +362,25 @@ fun triggerSOS(
             FirebaseFirestore.getInstance().collection("sos_alerts")
                 .add(sosData)
                 .addOnSuccessListener { docRef ->
+                    Log.d("KavachSOS", "SOS stored")
+
                     val alarmPlayer = MediaPlayer.create(context, R.raw.alarm)
                     alarmPlayer.isLooping = true
                     alarmPlayer.start()
-                    onAlarmStarted(alarmPlayer, docRef.id)
+
+                    onAlarmStarted(alarmPlayer, null)
+
                     Toast.makeText(context, "SOS Sent to Contacts", Toast.LENGTH_SHORT).show()
+                }
+                .addOnFailureListener {
+                    // 🔥 STILL PLAY ALARM EVEN IF FIRESTORE FAILS
+                    val alarmPlayer = MediaPlayer.create(context, R.raw.alarm)
+                    alarmPlayer.isLooping = true
+                    alarmPlayer.start()
+
+                    onAlarmStarted(alarmPlayer, null)
+
+                    Toast.makeText(context, "SOS triggered (offline mode)", Toast.LENGTH_SHORT).show()
                 }
         } else {
             Toast.makeText(context, "Could not fetch location", Toast.LENGTH_SHORT).show()
@@ -343,7 +429,7 @@ fun makeEmergencyCall(context: Context, phoneNumber: String) {
     try {
         val intent = Intent(Intent.ACTION_CALL)
         intent.data = android.net.Uri.parse("tel:$phoneNumber")
-        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         context.startActivity(intent)
     } catch (e: SecurityException) {
         Toast.makeText(context, "Call permission not granted", Toast.LENGTH_SHORT).show()
