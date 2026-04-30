@@ -25,7 +25,8 @@ class MainActivity : ComponentActivity() {
 
     private val permissions = arrayOf(
         Manifest.permission.SEND_SMS,
-        Manifest.permission.ACCESS_FINE_LOCATION
+        Manifest.permission.ACCESS_FINE_LOCATION,
+        Manifest.permission.CALL_PHONE
     )
 
     private fun checkAndRequestPermissions() {

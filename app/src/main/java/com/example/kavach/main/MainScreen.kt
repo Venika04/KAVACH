@@ -272,6 +272,13 @@ fun triggerSOS(
                 }
             }
 
+            // 🚨 CALL PRIMARY CONTACT (FIRST CONTACT)
+            val primaryContact = contactViewModel.contactList.firstOrNull()
+            if (primaryContact != null) {
+                makeEmergencyCall(context, primaryContact.phone)
+                Log.d("KavachSOS", "Calling ${primaryContact.phone}")
+            }
+
             // Store in Firestore
             val userId = FirebaseAuth.getInstance().currentUser?.uid ?: "anonymous"
             val sosData = mapOf(
@@ -330,6 +337,20 @@ fun recordSosResponse(documentId: String?, response: String) {
         .update("response", response)
         .addOnSuccessListener { Log.d("KavachSOS", "Response updated successfully") }
         .addOnFailureListener { Log.e("KavachSOS", "Failed to update response", it) }
+}
+
+fun makeEmergencyCall(context: Context, phoneNumber: String) {
+    try {
+        val intent = Intent(Intent.ACTION_CALL)
+        intent.data = android.net.Uri.parse("tel:$phoneNumber")
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        context.startActivity(intent)
+    } catch (e: SecurityException) {
+        Toast.makeText(context, "Call permission not granted", Toast.LENGTH_SHORT).show()
+    } catch (e: Exception) {
+        Toast.makeText(context, "Failed to make call", Toast.LENGTH_SHORT).show()
+        e.printStackTrace()
+    }
 }
 
 @Composable
