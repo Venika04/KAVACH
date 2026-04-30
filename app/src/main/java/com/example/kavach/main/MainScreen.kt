@@ -236,7 +236,7 @@ fun MainScreen(
                         // 🔥 FIX: close everything properly
                         showPinDialog = false
                         showFloatingCountdown = false
-                        showConfirmationDialog = false
+                        showConfirmationDialog = true
 
                         Toast.makeText(
                             context,
